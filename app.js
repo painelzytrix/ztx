@@ -1,25 +1,26 @@
 // ============================================
-// ZYTRIX AI — APPLICATION ENGINE
-// fal.ai Integration · 9-Variation Generation
+// ZYTRIX AI — APPLICATION ENGINE v2.1
+// Cinematic Premium Edition
+// fal.ai · 9-Variation Generation
 // ============================================
 
-const FAL_KEY = "8fa5fe7f-472c-45b7-94f9-039b3715248c:0c9f4b76dace16a94b9c25ad882d26a0";
+const FAL_KEY      = "8fa5fe7f-472c-45b7-94f9-039b3715248c:0c9f4b76dace16a94b9c25ad882d26a0";
 const FAL_ENDPOINT = "https://fal.run/fal-ai/flux/dev/image-to-image";
 
 // ============================================
 // STATE
 // ============================================
 const state = {
-  userPhotoBase64: null,
-  userPhotoFile: null,
-  refPhotoBase64: null,
-  refPhotoFile: null,
-  instructions: "",
-  generatedImages: [],
-  isGenerating: false,
-  favorites: new Set(),
+  userPhotoBase64:   null,
+  userPhotoFile:     null,
+  refPhotoBase64:    null,
+  refPhotoFile:      null,
+  instructions:      "",
+  generatedImages:   [],
+  isGenerating:      false,
+  favorites:         new Set(),
   currentLightboxIndex: -1,
-  lastParams: null
+  lastParams:        null
 };
 
 // ============================================
@@ -56,14 +57,14 @@ document.getElementById("inputRefPhoto").addEventListener("change", function(e) 
 function removeUpload(type) {
   if (type === 'user') {
     state.userPhotoBase64 = null;
-    state.userPhotoFile = null;
-    document.getElementById("previewUser").style.display = "none";
+    state.userPhotoFile   = null;
+    document.getElementById("previewUser").style.display  = "none";
     document.getElementById("uploadUserCard").querySelector(".upload-inner").style.display = "flex";
     document.getElementById("inputUserPhoto").value = "";
   } else {
     state.refPhotoBase64 = null;
-    state.refPhotoFile = null;
-    document.getElementById("previewRef").style.display = "none";
+    state.refPhotoFile   = null;
+    document.getElementById("previewRef").style.display  = "none";
     document.getElementById("uploadRefCard").querySelector(".upload-inner").style.display = "flex";
     document.getElementById("inputRefPhoto").value = "";
   }
@@ -75,167 +76,156 @@ function removeUpload(type) {
 function updateCounter(el) {
   state.instructions = el.value;
   document.getElementById("charCounter").textContent = `${el.value.length} / 500`;
-  if (el.value.length > 10) {
-    updateParamsPreview(el.value);
-  }
+  if (el.value.length > 10) updateParamsPreview(el.value);
 }
 
 function addTag(tag) {
-  const textarea = document.getElementById("instructionsInput");
-  const current = textarea.value.trim();
-  textarea.value = current ? current + ", " + tag : tag;
+  const textarea  = document.getElementById("instructionsInput");
+  const current   = textarea.value.trim();
+  textarea.value  = current ? current + ", " + tag : tag;
   state.instructions = textarea.value;
   updateCounter(textarea);
 }
 
 // ============================================
-// PARAMS PREVIEW — Parse instructions into JSON
+// PARAMS — Parse natural language → JSON
 // ============================================
 function parseInstructionsToParams(text) {
   const lower = text.toLowerCase();
-  const params = {};
+  const p = {};
 
   // Background
-  if (lower.includes("fundo preto") || lower.includes("black background")) {
-    params.background = "deep black studio";
-  } else if (lower.includes("fundo branco") || lower.includes("white background")) {
-    params.background = "clean white studio";
-  } else if (lower.includes("fundo") || lower.includes("background")) {
-    const bgMatch = text.match(/fundo\s+([\w\s]+?)(?:,|$)/i) || text.match(/background\s+([\w\s]+?)(?:,|$)/i);
-    params.background = bgMatch ? bgMatch[1].trim() : "studio background";
-  }
+  if (lower.includes("fundo preto") || lower.includes("black background"))
+    p.background = "deep black seamless studio backdrop";
+  else if (lower.includes("fundo branco") || lower.includes("white background"))
+    p.background = "clean white studio backdrop";
+  else if (lower.includes("fundo") || lower.includes("background"))
+    p.background = "professional studio backdrop";
 
   // Lighting
-  if (lower.includes("cinematográfica") || lower.includes("cinematica") || lower.includes("cinematic")) {
-    params.lighting = "cinematic studio lighting";
-  } else if (lower.includes("dramática") || lower.includes("dramatic")) {
-    params.lighting = "dramatic side lighting";
-  } else if (lower.includes("suave") || lower.includes("soft")) {
-    params.lighting = "soft diffused studio light";
-  } else if (lower.includes("luz") || lower.includes("light")) {
-    params.lighting = "professional studio lighting";
-  }
+  if (lower.includes("cinematográfica") || lower.includes("cinematica") || lower.includes("cinematic"))
+    p.lighting = "cinematic Rembrandt studio lighting";
+  else if (lower.includes("dramática") || lower.includes("dramatic"))
+    p.lighting = "dramatic split lighting, deep shadows";
+  else if (lower.includes("suave") || lower.includes("soft"))
+    p.lighting = "soft diffused large softbox lighting";
+  else if (lower.includes("lateral"))
+    p.lighting = "dramatic side key light, broad shadow";
+  else if (lower.includes("luz") || lower.includes("light"))
+    p.lighting = "professional three-point studio lighting";
 
   // Clothing
-  if (lower.includes("terno") || lower.includes("suit")) {
-    params.clothing = "premium business suit";
-  } else if (lower.includes("executiv")) {
-    params.clothing = "executive business attire";
-  } else if (lower.includes("médic") || lower.includes("doctor")) {
-    params.clothing = "professional medical coat";
-  } else if (lower.includes("advogad") || lower.includes("lawyer")) {
-    params.clothing = "formal lawyer attire";
-  } else if (lower.includes("roupa") || lower.includes("vestido")) {
-    params.clothing = "elegant professional clothing";
-  }
+  if (lower.includes("terno") || lower.includes("suit"))
+    p.clothing = "premium tailored business suit";
+  else if (lower.includes("executiv"))
+    p.clothing = "high-end executive business attire";
+  else if (lower.includes("médic") || lower.includes("doctor"))
+    p.clothing = "professional white medical coat";
+  else if (lower.includes("advogad") || lower.includes("lawyer"))
+    p.clothing = "formal dark lawyer attire";
+  else if (lower.includes("roupa elegante") || lower.includes("elegant"))
+    p.clothing = "refined elegant professional clothing";
 
   // Expression
-  if (lower.includes("séri") || lower.includes("serious") || lower.includes("confiante")) {
-    params.expression = "serious, confident, professional";
-  } else if (lower.includes("suave") || lower.includes("amigável") || lower.includes("sorriso")) {
-    params.expression = "warm, friendly smile";
-  } else if (lower.includes("expressão")) {
-    params.expression = "professional expression";
-  }
+  if (lower.includes("séri") || lower.includes("confiante") || lower.includes("serious"))
+    p.expression = "serious, authoritative, confident";
+  else if (lower.includes("sorriso") || lower.includes("amigável"))
+    p.expression = "warm professional smile";
+  else if (lower.includes("expressão"))
+    p.expression = "composed professional expression";
 
   // Quality
-  if (lower.includes("ultra realista") || lower.includes("hyper realistic")) {
-    params.quality = "hyperrealistic photography, 8K, photorealistic";
-  } else if (lower.includes("fotográfica") || lower.includes("photographic")) {
-    params.quality = "photographic quality, DSLR, 4K";
-  } else {
-    params.quality = "professional photography, high resolution";
-  }
+  if (lower.includes("ultra realista") || lower.includes("hyper"))
+    p.quality = "hyperrealistic photography, 8K UHD, photorealistic skin detail";
+  else if (lower.includes("fotográfica") || lower.includes("photographic"))
+    p.quality = "photographic quality, Hasselblad medium format, 4K";
+  else
+    p.quality = "professional studio photography, high resolution, sharp";
 
   // Skin
-  if (lower.includes("pele") || lower.includes("skin")) {
-    params.skin = lower.includes("natural") ? "natural refined skin texture" : "smooth professional skin";
-  }
+  if (lower.includes("pele"))
+    p.skin = lower.includes("natural")
+      ? "natural refined skin texture, pores visible, photorealistic"
+      : "smooth professional skin, soft retouching";
 
   // Pose
-  if (lower.includes("pose corporativa") || lower.includes("corporate pose")) {
-    params.pose = "corporate professional pose";
-  } else if (lower.includes("pose") || lower.includes("postura")) {
-    params.pose = "confident upright pose";
-  }
+  if (lower.includes("pose corporativa") || lower.includes("corporate"))
+    p.pose = "confident upright corporate pose";
+  else if (lower.includes("pose") || lower.includes("postura"))
+    p.pose = "strong professional posture";
 
-  // Style
-  params.style = "ultra photorealistic studio portrait photography";
-  params.preserve_identity = true;
-  params.face_preservation_strength = 0.85;
+  // Core constants
+  p.style                      = "ultra photorealistic professional portrait photography";
+  p.preserve_identity          = true;
+  p.face_preservation_strength = 0.85;
 
-  return params;
+  return p;
 }
 
 function updateParamsPreview(text) {
-  const params = parseInstructionsToParams(text);
+  const params    = parseInstructionsToParams(text);
   state.lastParams = params;
-  const jsonEl = document.getElementById("paramsJson");
-  const emptyEl = document.querySelector(".params-empty");
-  const formatted = JSON.stringify(params, null, 2);
-  jsonEl.innerHTML = syntaxHighlight(formatted);
-  jsonEl.style.display = "block";
+  const jsonEl    = document.getElementById("paramsJson");
+  const emptyEl   = document.querySelector(".params-empty");
+  jsonEl.innerHTML = syntaxHighlight(JSON.stringify(params, null, 2));
+  jsonEl.style.display  = "block";
   emptyEl.style.display = "none";
 }
 
 function syntaxHighlight(json) {
   return json
-    .replace(/"([^"]+)":/g, '<span style="color:#e50914">\"$1\"</span>:')
-    .replace(/: "([^"]+)"/g, ': <span style="color:rgba(245,245,245,0.7)">\"$1\"</span>')
-    .replace(/: (true|false)/g, ': <span style="color:#00ff88">$1</span>')
-    .replace(/: ([0-9.]+)/g, ': <span style="color:#ff9900">$1</span>');
+    .replace(/"([^"]+)":/g, '<span style="color:var(--gold)">\"$1\"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span style="color:rgba(237,232,224,0.75)">\"$1\"</span>')
+    .replace(/: (true|false)/g, ': <span style="color:#7ecfa4">$1</span>')
+    .replace(/: ([0-9.]+)/g, ': <span style="color:var(--silver)">$1</span>');
 }
 
 // ============================================
-// BUILD PROMPT FROM PARAMS
+// PROMPT BUILDER
 // ============================================
-function buildPrompt(params, variationSeed) {
-  const variations = [
-    "sharp focus, front lighting",
-    "slight angle right, dramatic shadows",
-    "soft background bokeh, warm fill",
-    "three-quarter view, bold contrast",
-    "profile lighting, cinematic mood",
-    "overhead key light, editorial style",
-    "low key lighting, luxury feel",
-    "natural window light simulation",
-    "studio strobe, maximum detail"
+function buildPrompt(params, seed) {
+  const cinematicVariations = [
+    "front on, sharp symmetrical lighting, editorial portrait",
+    "slight right angle, dramatic Rembrandt shadow, moody atmosphere",
+    "three-quarter view, cinematic bokeh background, luxury feel",
+    "low camera angle, authority pose, strong key light from above",
+    "profile lighting, artistic shadow play, high contrast",
+    "close crop portrait, catch light in eyes, magazine quality",
+    "environmental portrait framing, architectural background blur",
+    "overhead key light, editorial fashion photography style",
+    "broad lighting, open expression, professional headshot standard"
   ];
 
-  const base = [
-    params.style || "ultra photorealistic studio portrait photography",
-    params.background ? `background: ${params.background}` : "",
-    params.lighting ? `lighting: ${params.lighting}` : "",
-    params.clothing ? `wearing: ${params.clothing}` : "",
-    params.expression ? `expression: ${params.expression}` : "",
-    params.skin ? `skin: ${params.skin}` : "",
-    params.pose ? `pose: ${params.pose}` : "",
-    params.quality || "photorealistic, 8K, professional",
-    variations[variationSeed % variations.length],
-    "preserve facial identity, preserve facial features, realistic proportions",
-    "professional studio photograph, not digital art, not painting, photorealistic"
+  const parts = [
+    params.style  || "ultra photorealistic professional portrait photography",
+    params.background  ? `background: ${params.background}` : "",
+    params.lighting    ? `lighting setup: ${params.lighting}` : "",
+    params.clothing    ? `wearing: ${params.clothing}` : "",
+    params.expression  ? `expression: ${params.expression}` : "",
+    params.skin        ? `skin rendering: ${params.skin}` : "",
+    params.pose        ? `pose: ${params.pose}` : "",
+    params.quality     || "photorealistic, high resolution",
+    cinematicVariations[seed % cinematicVariations.length],
+    "preserve exact facial identity, preserve all facial features, realistic proportions, natural body",
+    "studio photograph, NOT digital art, NOT painting, NOT illustration, 100% photorealistic"
   ].filter(Boolean).join(", ");
 
-  return base;
+  return parts;
 }
 
 // ============================================
-// FAL.AI API CALL
+// FAL.AI API
 // ============================================
 async function generateSingleImage(imageBase64, prompt, index) {
-  const cleanBase64 = imageBase64.split(',')[1] || imageBase64;
-  const mimeMatch = imageBase64.match(/data:([^;]+);/);
-  const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
-
   const payload = {
-    image_url: imageBase64,
-    prompt: prompt,
-    num_inference_steps: 28,
-    guidance_scale: 7.5,
-    strength: 0.55,
-    seed: Math.floor(Math.random() * 9999999) + index * 1000,
-    image_size: "portrait_4_3",
-    num_images: 1,
+    image_url:            imageBase64,
+    prompt:               prompt,
+    num_inference_steps:  28,
+    guidance_scale:       7.5,
+    strength:             0.55,
+    seed:                 Math.floor(Math.random() * 9999999) + index * 1337,
+    image_size:           "portrait_4_3",
+    num_images:           1,
     enable_safety_checker: false
   };
 
@@ -243,99 +233,81 @@ async function generateSingleImage(imageBase64, prompt, index) {
     method: "POST",
     headers: {
       "Authorization": `Key ${FAL_KEY}`,
-      "Content-Type": "application/json"
+      "Content-Type":  "application/json"
     },
     body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`FAL API error ${response.status}: ${errText}`);
+    throw new Error(`FAL ${response.status}: ${errText.slice(0, 120)}`);
   }
 
   const data = await response.json();
 
-  // fal.ai returns images array
-  if (data.images && data.images.length > 0) {
-    return data.images[0].url;
-  } else if (data.image && data.image.url) {
-    return data.image.url;
-  } else {
-    throw new Error("No image returned from fal.ai");
-  }
+  if (data.images && data.images.length > 0) return data.images[0].url;
+  if (data.image && data.image.url)           return data.image.url;
+  throw new Error("No image in fal.ai response");
 }
 
 // ============================================
-// MAIN GENERATION FLOW
+// MAIN GENERATION
 // ============================================
 async function startGeneration() {
   if (state.isGenerating) return;
 
   if (!state.userPhotoBase64) {
-    showToast("⚠ Envie uma foto do usuário antes de gerar.");
+    showToast("⚠  Envie uma foto do usuário antes de gerar.");
     return;
   }
-
   if (!state.instructions.trim() && !state.refPhotoBase64) {
-    showToast("⚠ Adicione instruções ou uma imagem de referência.");
+    showToast("⚠  Adicione instruções ou uma imagem de referência.");
     return;
   }
 
-  state.isGenerating = true;
+  state.isGenerating    = true;
   state.generatedImages = [];
 
   const btn = document.getElementById("generateBtn");
   btn.disabled = true;
   btn.querySelector(".gen-label").textContent = "GERANDO...";
 
-  // Parse params if not already done
-  if (state.instructions.trim()) {
-    updateParamsPreview(state.instructions);
-  }
-
+  if (state.instructions.trim()) updateParamsPreview(state.instructions);
   const params = state.lastParams || parseInstructionsToParams(state.instructions || "professional portrait");
 
-  // Build grid
   buildGrid();
   showProgress(true);
 
-  const total = 9;
+  const total   = 9;
   let completed = 0;
-
-  // Generate all 9 in parallel (batched 3 at a time to avoid rate limits)
-  const batches = [[0,1,2], [3,4,5], [6,7,8]];
+  const batches = [[0,1,2],[3,4,5],[6,7,8]];
 
   for (const batch of batches) {
-    const promises = batch.map(async (i) => {
+    await Promise.all(batch.map(async (i) => {
       const prompt = buildPrompt(params, i);
       updateCellLoading(i, true);
-      logProgress(`Gerando variação ${i + 1}...`);
-
+      logProgress(`Processando variação ${i + 1} de ${total}...`);
       try {
-        const imageUrl = await generateSingleImage(state.userPhotoBase64, prompt, i);
-        state.generatedImages[i] = imageUrl;
-        setCellImage(i, imageUrl);
-        completed++;
-        updateProgress(completed, total);
+        const url = await generateSingleImage(state.userPhotoBase64, prompt, i);
+        state.generatedImages[i] = url;
+        setCellImage(i, url);
       } catch (err) {
-        console.error(`Variation ${i+1} failed:`, err);
+        console.error(`Variation ${i+1}:`, err);
         setCellError(i, err.message);
+      } finally {
         completed++;
         updateProgress(completed, total);
       }
-    });
-
-    await Promise.all(promises);
+    }));
   }
 
-  // Done
   state.isGenerating = false;
   btn.disabled = false;
   btn.querySelector(".gen-label").textContent = "GERAR IMAGENS";
   showProgress(false);
-  document.getElementById("refineBlock").style.display = "block";
+  document.getElementById("refineBlock").style.display   = "block";
   document.getElementById("resultActions").style.display = "flex";
-  logProgress(`✓ ${completed} variações geradas com sucesso.`);
+  logProgress(`✓ Geração concluída — ${completed} variações prontas.`);
 }
 
 // ============================================
@@ -344,13 +316,13 @@ async function startGeneration() {
 function buildGrid() {
   const container = document.getElementById("gridContainer");
   container.innerHTML = `<div class="image-grid" id="imageGrid"></div>`;
-
   const grid = document.getElementById("imageGrid");
+
   for (let i = 0; i < 9; i++) {
-    const cell = document.createElement("div");
+    const cell     = document.createElement("div");
     cell.className = "image-cell";
-    cell.id = `cell-${i}`;
-    cell.style.animationDelay = `${i * 0.06}s`;
+    cell.id        = `cell-${i}`;
+    cell.style.animationDelay = `${i * 0.055}s`;
     cell.innerHTML = `
       <div class="cell-loading" id="loading-${i}">
         <div class="cell-spinner"></div>
@@ -363,8 +335,8 @@ function buildGrid() {
 }
 
 function updateCellLoading(i, show) {
-  const loading = document.getElementById(`loading-${i}`);
-  if (loading) loading.style.display = show ? "flex" : "none";
+  const el = document.getElementById(`loading-${i}`);
+  if (el) el.style.display = show ? "flex" : "none";
 }
 
 function setCellImage(i, url) {
@@ -372,12 +344,12 @@ function setCellImage(i, url) {
   if (!cell) return;
   updateCellLoading(i, false);
 
-  const img = document.createElement("img");
-  img.src = url;
-  img.alt = `Variação ${i + 1}`;
+  const img   = document.createElement("img");
+  img.src     = url;
+  img.alt     = `Variação ${i + 1}`;
   img.loading = "lazy";
 
-  const overlay = document.createElement("div");
+  const overlay   = document.createElement("div");
   overlay.className = "cell-overlay";
   overlay.innerHTML = `
     <div class="cell-actions">
@@ -398,9 +370,9 @@ function setCellError(i, msg) {
   if (!cell) return;
   updateCellLoading(i, false);
   cell.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;padding:16px;text-align:center">
-      <span style="color:var(--red);font-size:20px">✕</span>
-      <span style="font-family:var(--mono);font-size:9px;color:rgba(245,245,245,0.3);letter-spacing:1px">FALHA NA VARIAÇÃO ${i+1}</span>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;padding:16px;text-align:center">
+      <span style="color:var(--gold-dim);font-size:18px;opacity:0.6">✕</span>
+      <span style="font-family:var(--mono);font-size:8px;color:rgba(237,232,224,0.25);letter-spacing:1px">FALHA — VARIAÇÃO ${i+1}</span>
       <button class="cell-btn" onclick="redoSingle(${i})" style="margin-top:4px">↺ TENTAR NOVAMENTE</button>
     </div>
   `;
@@ -415,7 +387,7 @@ function showProgress(show) {
 
 function updateProgress(done, total) {
   const pct = Math.round((done / total) * 100);
-  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressFill").style.width     = pct + "%";
   document.getElementById("progressCount").textContent = `${done} / ${total}`;
 }
 
@@ -430,19 +402,14 @@ function openLightbox(i) {
   const url = state.generatedImages[i];
   if (!url) return;
   state.currentLightboxIndex = i;
-  document.getElementById("lightboxImg").src = url;
-  document.getElementById("lightboxInfo").textContent = `VARIAÇÃO ${String(i + 1).padStart(2, '0')} · ZYTRIX AI`;
+  document.getElementById("lightboxImg").src     = url;
+  document.getElementById("lightboxInfo").textContent = `VARIAÇÃO ${String(i+1).padStart(2,'0')}  ·  ZYTRIX AI`;
   document.getElementById("lightbox").classList.add("active");
   document.body.style.overflow = "hidden";
 }
 
 function closeLightbox(e) {
   if (e && e.target !== document.getElementById("lightbox") && !e.target.classList.contains("lightbox-close")) return;
-  if (!e) {
-    document.getElementById("lightbox").classList.remove("active");
-    document.body.style.overflow = "";
-    return;
-  }
   document.getElementById("lightbox").classList.remove("active");
   document.body.style.overflow = "";
 }
@@ -454,36 +421,22 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-function downloadLightbox() {
-  const i = state.currentLightboxIndex;
-  if (i >= 0) downloadImage(i);
-}
-
-function favoriteFromLightbox() {
-  const i = state.currentLightboxIndex;
-  if (i >= 0) toggleFavorite(i);
-}
-
-function redoVariation() {
-  const i = state.currentLightboxIndex;
-  if (i >= 0) {
-    closeLightbox();
-    redoSingle(i);
-  }
-}
+function downloadLightbox()   { const i = state.currentLightboxIndex; if (i >= 0) downloadImage(i); }
+function favoriteFromLightbox(){ const i = state.currentLightboxIndex; if (i >= 0) toggleFavorite(i); }
+function redoVariation()      { const i = state.currentLightboxIndex; if (i >= 0) { closeLightbox(); redoSingle(i); } }
 
 // ============================================
-// FAVORITE
+// FAVORITES
 // ============================================
 function toggleFavorite(i) {
-  const favBtn = document.getElementById(`fav-${i}`);
+  const btn = document.getElementById(`fav-${i}`);
   if (state.favorites.has(i)) {
     state.favorites.delete(i);
-    if (favBtn) { favBtn.classList.remove("fav-active"); favBtn.textContent = "♡ FAV"; }
+    if (btn) { btn.classList.remove("fav-active"); btn.textContent = "♡ FAV"; }
   } else {
     state.favorites.add(i);
-    if (favBtn) { favBtn.classList.add("fav-active"); favBtn.textContent = "♥ FAV"; }
-    showToast(`♥ Variação ${i + 1} adicionada aos favoritos`);
+    if (btn) { btn.classList.add("fav-active"); btn.textContent = "♥ FAV"; }
+    showToast(`♥  Variação ${i+1} adicionada aos favoritos`);
   }
 }
 
@@ -493,10 +446,10 @@ function toggleFavorite(i) {
 function downloadImage(i) {
   const url = state.generatedImages[i];
   if (!url) return;
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `zytrix-variacao-${String(i + 1).padStart(2, '0')}.jpg`;
-  a.target = "_blank";
+  const a       = document.createElement("a");
+  a.href        = url;
+  a.download    = `zytrix-portrait-${String(i+1).padStart(2,'0')}.jpg`;
+  a.target      = "_blank";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -504,27 +457,23 @@ function downloadImage(i) {
 
 function downloadAll() {
   state.generatedImages.forEach((url, i) => {
-    if (url) {
-      setTimeout(() => downloadImage(i), i * 300);
-    }
+    if (url) setTimeout(() => downloadImage(i), i * 280);
   });
 }
 
 // ============================================
-// REDO SINGLE VARIATION
+// REDO SINGLE
 // ============================================
 async function redoSingle(i) {
   if (!state.userPhotoBase64) return;
   const params = state.lastParams || parseInstructionsToParams(state.instructions || "professional portrait");
-  const prompt = buildPrompt(params, i + Math.floor(Math.random() * 100));
-
+  const prompt = buildPrompt(params, i + Math.floor(Math.random() * 200));
   setCellLoadingState(i);
-
   try {
-    const url = await generateSingleImage(state.userPhotoBase64, prompt, i + 100);
+    const url = await generateSingleImage(state.userPhotoBase64, prompt, i + 500);
     state.generatedImages[i] = url;
     setCellImage(i, url);
-  } catch (err) {
+  } catch(err) {
     setCellError(i, err.message);
   }
 }
@@ -535,56 +484,51 @@ function setCellLoadingState(i) {
   cell.innerHTML = `
     <div class="cell-loading" id="loading-${i}">
       <div class="cell-spinner"></div>
-      <div class="cell-loading-text">REFAZENDO ${i + 1}</div>
+      <div class="cell-loading-text">REFAZENDO ${i+1}</div>
     </div>
-    <span class="cell-num">${String(i + 1).padStart(2, '0')}</span>
+    <span class="cell-num">${String(i+1).padStart(2,'0')}</span>
   `;
 }
 
 // ============================================
-// REFINE GENERATION
+// REFINE
 // ============================================
 async function refineGeneration() {
   const refineText = document.getElementById("refineInput").value.trim();
   if (!refineText) return;
-
-  // Merge refinement with existing instructions
-  const merged = (state.instructions ? state.instructions + ", " : "") + interpretRefinement(refineText);
-  document.getElementById("instructionsInput").value = merged;
+  const merged    = (state.instructions ? state.instructions + ", " : "") + interpretRefinement(refineText);
+  const textarea  = document.getElementById("instructionsInput");
+  textarea.value  = merged;
   state.instructions = merged;
-  updateCounter(document.getElementById("instructionsInput"));
+  updateCounter(textarea);
   document.getElementById("refineInput").value = "";
-
-  showToast("↺ Reinterpretando instruções e regerando...");
+  showToast("↺  Reinterpretando e regerando...");
   await startGeneration();
 }
 
 function interpretRefinement(text) {
   const lower = text.toLowerCase();
-  const mappings = {
-    "mais elegante": "elegant, refined, high-end aesthetic",
-    "mais escuro": "darker tones, moody atmosphere, low key",
-    "mais claro": "brighter exposure, high key, clean light",
-    "luz mais forte": "stronger key light, high contrast, dramatic lighting",
-    "mais contrastado": "high contrast, bold shadows",
-    "mais natural": "natural lighting, organic feel, less processed",
-    "mais profissional": "corporate professional, executive style",
-    "mais moderno": "contemporary style, modern aesthetic",
-    "mais sóbrio": "sober, minimal, understated elegance",
-    "fundo mais escuro": "very dark background, near black",
-    "mais nitido": "ultra sharp, tack sharp focus, maximum detail"
+  const map = {
+    "mais elegante":      "elegant refined high-end aesthetic, sophisticated",
+    "mais escuro":        "darker tones, moody low-key atmosphere, deep shadows",
+    "mais claro":         "brighter high-key exposure, clean open light",
+    "luz mais forte":     "stronger key light, high contrast, bold dramatic lighting",
+    "mais contrastado":   "high contrast, deep blacks, bright highlights",
+    "mais natural":       "natural ambient lighting, organic unprocessed feel",
+    "mais profissional":  "corporate executive style, polished professional",
+    "mais moderno":       "contemporary editorial style, modern aesthetic",
+    "mais sóbrio":        "understated elegance, minimal refined aesthetic",
+    "fundo mais escuro":  "very dark near-black background, minimal detail",
+    "mais nítido":        "ultra sharp tack focus, maximum micro-detail"
   };
-
-  for (const [key, val] of Object.entries(mappings)) {
+  for (const [key, val] of Object.entries(map)) {
     if (lower.includes(key)) return val;
   }
-
-  // Fallback: use text as-is appended
   return text;
 }
 
 // ============================================
-// CLEAR RESULTS
+// CLEAR
 // ============================================
 function clearResults() {
   state.generatedImages = [];
@@ -592,7 +536,7 @@ function clearResults() {
   document.getElementById("gridContainer").innerHTML = `
     <div class="grid-placeholder">
       <div class="placeholder-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.3">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.25">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
           <circle cx="8.5" cy="8.5" r="1.5"/>
           <polyline points="21 15 16 10 5 21"/>
@@ -608,16 +552,14 @@ function clearResults() {
     </div>
   `;
   document.getElementById("resultActions").style.display = "none";
-  document.getElementById("refineBlock").style.display = "none";
+  document.getElementById("refineBlock").style.display   = "none";
 }
 
 // ============================================
-// TOAST NOTIFICATION
+// TOAST
 // ============================================
 function showToast(msg) {
-  const existing = document.querySelector(".zytrix-toast");
-  if (existing) existing.remove();
-
+  document.querySelector(".zytrix-toast")?.remove();
   const toast = document.createElement("div");
   toast.className = "zytrix-toast";
   toast.textContent = msg;
@@ -625,52 +567,47 @@ function showToast(msg) {
     position: fixed;
     bottom: 32px;
     left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--black-4, #161616);
-    border: 1px solid rgba(229,9,20,0.4);
-    color: rgba(245,245,245,0.85);
+    transform: translateX(-50%) translateY(16px);
+    background: #0f0f14;
+    border: 1px solid rgba(201,168,76,0.3);
+    color: rgba(237,232,224,0.8);
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 1px;
-    padding: 12px 24px;
-    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    padding: 11px 22px;
+    border-radius: 3px;
     z-index: 9999;
     opacity: 0;
     transition: all 0.3s ease;
     white-space: nowrap;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 20px rgba(201,168,76,0.08);
   `;
   document.body.appendChild(toast);
-
   requestAnimationFrame(() => {
-    toast.style.opacity = "1";
+    toast.style.opacity   = "1";
     toast.style.transform = "translateX(-50%) translateY(0)";
   });
-
   setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(-50%) translateY(10px)";
+    toast.style.opacity   = "0";
+    toast.style.transform = "translateX(-50%) translateY(8px)";
     setTimeout(() => toast.remove(), 300);
-  }, 3500);
+  }, 3200);
 }
 
 // ============================================
 // INIT
 // ============================================
 document.addEventListener("DOMContentLoaded", () => {
-  // Live param preview as user types
+  // Live param preview
   document.getElementById("instructionsInput").addEventListener("input", function() {
-    if (this.value.length > 5) {
-      updateParamsPreview(this.value);
-    }
+    if (this.value.length > 5) updateParamsPreview(this.value);
   });
 
-  // Drag and drop for user photo
-  const uploadCards = document.querySelectorAll(".upload-card");
-  uploadCards.forEach((card, idx) => {
+  // Drag-and-drop
+  document.querySelectorAll(".upload-card").forEach((card, idx) => {
     card.addEventListener("dragover", (e) => {
       e.preventDefault();
-      card.style.borderColor = "var(--red)";
+      card.style.borderColor = "var(--border-gold)";
     });
     card.addEventListener("dragleave", () => {
       card.style.borderColor = "";
@@ -681,13 +618,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = e.dataTransfer.files[0];
       if (!file || !file.type.startsWith("image/")) return;
       const inputId = idx === 0 ? "inputUserPhoto" : "inputRefPhoto";
-      const input = document.getElementById(inputId);
-      const dt = new DataTransfer();
+      const input   = document.getElementById(inputId);
+      const dt      = new DataTransfer();
       dt.items.add(file);
       input.files = dt.files;
       input.dispatchEvent(new Event("change"));
     });
   });
 
-  console.log("%c ZYTRIX AI v2.1 — INITIALIZED ", "background:#e50914;color:white;font-family:monospace;font-size:14px;padding:4px 8px;");
+  console.log(
+    "%c ZYTRIX AI v2.1 — CINEMATIC EDITION ",
+    "background:#c9a84c;color:#060608;font-family:monospace;font-size:13px;padding:4px 10px;border-radius:2px;"
+  );
 });
