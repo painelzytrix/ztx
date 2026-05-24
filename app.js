@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 // ── CONFIGURE AQUI: URL do seu Cloudflare Worker ──
-const WORKER_URL = "https://twilight-hall-cb6a.arllisonmarinho1.workers.dev/";
+const WORKER_URL = "https://twilight-hall-cb6a.arllisonmarinho1.workers.dev";
 
 // ── STATE ──
 const state = {
