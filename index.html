@@ -6,16 +6,14 @@
   <title>ZYTRIX AI — Professional Photo Generation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- NOISE OVERLAY -->
   <div class="noise-overlay"></div>
-
-  <!-- SCANLINE EFFECT -->
   <div class="scanlines"></div>
+  <div class="vignette"></div>
 
   <!-- HEADER -->
   <header class="header">
@@ -35,29 +33,29 @@
 
   <!-- HERO STRIP -->
   <div class="hero-strip">
-    <div class="hero-text">TRANSFORM ANY PHOTO INTO A STUDIO-GRADE PROFESSIONAL PORTRAIT</div>
-    <div class="hero-line"></div>
+    <div class="marquee-inner">
+      <span class="hero-text">TRANSFORM ANY PHOTO INTO A STUDIO-GRADE PROFESSIONAL PORTRAIT &nbsp;&nbsp;·&nbsp;&nbsp; ZYTRIX AI &nbsp;&nbsp;·&nbsp;&nbsp; 9 VARIATIONS SIMULTANEOUSLY &nbsp;&nbsp;·&nbsp;&nbsp; HYPERREALISTIC OUTPUT &nbsp;&nbsp;·&nbsp;&nbsp; </span>
+      <span class="hero-text" aria-hidden="true">TRANSFORM ANY PHOTO INTO A STUDIO-GRADE PROFESSIONAL PORTRAIT &nbsp;&nbsp;·&nbsp;&nbsp; ZYTRIX AI &nbsp;&nbsp;·&nbsp;&nbsp; 9 VARIATIONS SIMULTANEOUSLY &nbsp;&nbsp;·&nbsp;&nbsp; HYPERREALISTIC OUTPUT &nbsp;&nbsp;·&nbsp;&nbsp; </span>
+    </div>
   </div>
 
   <!-- MAIN PANEL -->
   <main class="main-panel">
 
-    <!-- LEFT COLUMN: INPUTS -->
+    <!-- LEFT COLUMN -->
     <section class="input-column">
 
-      <!-- UPLOAD SECTION -->
       <div class="section-label">
         <span class="section-num">01</span>
         <span class="section-title">PHOTO INPUTS</span>
       </div>
 
       <div class="upload-row">
-        <!-- USER PHOTO -->
         <div class="upload-card" id="uploadUserCard">
           <input type="file" id="inputUserPhoto" accept="image/*" hidden />
           <div class="upload-inner" onclick="document.getElementById('inputUserPhoto').click()">
             <div class="upload-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
               </svg>
@@ -73,12 +71,11 @@
           </div>
         </div>
 
-        <!-- REFERENCE IMAGE -->
         <div class="upload-card" id="uploadRefCard">
           <input type="file" id="inputRefPhoto" accept="image/*" hidden />
           <div class="upload-inner" onclick="document.getElementById('inputRefPhoto').click()">
             <div class="upload-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
                 <polyline points="21 15 16 10 5 21"/>
@@ -96,8 +93,7 @@
         </div>
       </div>
 
-      <!-- INSTRUCTIONS -->
-      <div class="section-label" style="margin-top: 32px;">
+      <div class="section-label" style="margin-top:32px">
         <span class="section-num">02</span>
         <span class="section-title">INSTRUÇÕES INTELIGENTES</span>
       </div>
@@ -114,8 +110,6 @@
           placeholder="Ex: fundo preto elegante, luz de estúdio cinematográfica, terno social premium, expressão séria e confiante, pele natural refinada, qualidade fotográfica de estúdio..."
           oninput="updateCounter(this)"
         ></textarea>
-
-        <!-- QUICK TAGS -->
         <div class="quick-tags">
           <div class="tags-label">ATALHOS RÁPIDOS</div>
           <div class="tags-row">
@@ -133,8 +127,7 @@
         </div>
       </div>
 
-      <!-- PARAMETERS DISPLAY -->
-      <div class="section-label" style="margin-top: 28px;">
+      <div class="section-label" style="margin-top:28px">
         <span class="section-num">03</span>
         <span class="section-title">PARÂMETROS GERADOS</span>
         <span class="section-badge">AUTO</span>
@@ -148,27 +141,25 @@
         <pre class="params-json" id="paramsJson" style="display:none"></pre>
       </div>
 
-      <!-- GENERATE BUTTON -->
       <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
         <span class="gen-btn-inner">
           <span class="gen-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
           </span>
           <span class="gen-label">GERAR IMAGENS</span>
           <span class="gen-count">9 VARIAÇÕES</span>
         </span>
-        <div class="gen-btn-glow"></div>
+        <div class="gen-btn-shimmer"></div>
       </button>
 
-      <!-- REFINE BLOCK (hidden initially) -->
       <div class="refine-block" id="refineBlock" style="display:none">
         <div class="refine-label">REFINAMENTO INTELIGENTE</div>
         <div class="refine-input-row">
-          <input type="text" id="refineInput" class="refine-input" placeholder='Ex: "deixa mais elegante e com luz mais forte"' />
+          <input type="text" id="refineInput" class="refine-input" placeholder='"deixa mais elegante e com luz mais forte"' />
           <button class="refine-btn" onclick="refineGeneration()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="1 4 1 10 7 10"/>
               <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
             </svg>
@@ -179,7 +170,7 @@
 
     </section>
 
-    <!-- RIGHT COLUMN: RESULTS -->
+    <!-- RIGHT COLUMN -->
     <section class="result-column">
 
       <div class="result-header">
@@ -193,11 +184,10 @@
         </div>
       </div>
 
-      <!-- GRID PLACEHOLDER -->
       <div class="grid-container" id="gridContainer">
         <div class="grid-placeholder">
           <div class="placeholder-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.3">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.25">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
@@ -213,7 +203,6 @@
         </div>
       </div>
 
-      <!-- PROGRESS BAR (hidden) -->
       <div class="progress-block" id="progressBlock" style="display:none">
         <div class="progress-header">
           <span class="progress-label">GERANDO VARIAÇÕES</span>
@@ -226,7 +215,6 @@
       </div>
 
     </section>
-
   </main>
 
   <!-- LIGHTBOX -->
