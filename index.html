@@ -1,247 +1,285 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZYTRIX AI — Professional Photo Generation</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZYTRIX AI — Professional Image Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="noise-overlay"></div>
-  <div class="scanlines"></div>
-  <div class="vignette"></div>
+<div class="bg-ambient"></div>
 
-  <!-- HEADER -->
-  <header class="header">
-    <div class="header-inner">
-      <div class="logo-block">
-        <span class="logo-text">ZYTRIX</span>
-        <span class="logo-ai">AI</span>
-        <div class="logo-underline"></div>
-      </div>
-      <div class="slogan">PORTRAIT INTELLIGENCE SYSTEM <span class="slogan-version">v2.1</span></div>
-      <div class="header-status">
-        <span class="status-dot"></span>
-        <span class="status-label">SYSTEM ONLINE</span>
-      </div>
-    </div>
-  </header>
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-orb">
+    <div class="orb-core"></div>
+    <div class="orb-ring"></div>
+    <div class="orb-ring-2"></div>
+    <div class="orb-ring-3"></div>
+  </div>
+  <div class="loading-title">GERANDO</div>
+  <div class="loading-status" id="loadingStatus">Inicializando sistema neural...</div>
+  <div class="loading-bar-track">
+    <div class="loading-bar-fill" id="loadingBar"></div>
+  </div>
+  <div class="loading-count" id="loadingCount">0 / 9 imagens</div>
+</div>
 
-  <!-- HERO STRIP -->
-  <div class="hero-strip">
-    <div class="marquee-inner">
-      <span class="hero-text">TRANSFORM ANY PHOTO INTO A STUDIO-GRADE PROFESSIONAL PORTRAIT &nbsp;&nbsp;·&nbsp;&nbsp; ZYTRIX AI &nbsp;&nbsp;·&nbsp;&nbsp; 9 VARIATIONS SIMULTANEOUSLY &nbsp;&nbsp;·&nbsp;&nbsp; HYPERREALISTIC OUTPUT &nbsp;&nbsp;·&nbsp;&nbsp; </span>
-      <span class="hero-text" aria-hidden="true">TRANSFORM ANY PHOTO INTO A STUDIO-GRADE PROFESSIONAL PORTRAIT &nbsp;&nbsp;·&nbsp;&nbsp; ZYTRIX AI &nbsp;&nbsp;·&nbsp;&nbsp; 9 VARIATIONS SIMULTANEOUSLY &nbsp;&nbsp;·&nbsp;&nbsp; HYPERREALISTIC OUTPUT &nbsp;&nbsp;·&nbsp;&nbsp; </span>
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="" />
+    <div class="lightbox-actions">
+      <button class="lb-btn" onclick="downloadLightbox()">⬇ Baixar</button>
+      <button class="lb-btn" onclick="regenLightbox()">↻ Regenerar</button>
+      <button class="lb-btn" onclick="favLightbox()">★ Favoritar</button>
     </div>
   </div>
+</div>
 
-  <!-- MAIN PANEL -->
-  <main class="main-panel">
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-    <!-- LEFT COLUMN -->
-    <section class="input-column">
+<!-- APP -->
+<div class="app-wrapper">
 
-      <div class="section-label">
-        <span class="section-num">01</span>
-        <span class="section-title">PHOTO INPUTS</span>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo-group">
+      <div class="logo-mark">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" stroke="url(#grad1)" stroke-width="1.5" fill="none"/>
+          <polygon points="20,8 32,15 32,25 20,32 8,25 8,15" fill="url(#grad2)" opacity="0.15"/>
+          <line x1="20" y1="2" x2="20" y2="38" stroke="url(#grad1)" stroke-width="0.75" opacity="0.4"/>
+          <line x1="2" y1="12" x2="38" y2="28" stroke="url(#grad1)" stroke-width="0.75" opacity="0.4"/>
+          <line x1="38" y1="12" x2="2" y2="28" stroke="url(#grad1)" stroke-width="0.75" opacity="0.4"/>
+          <circle cx="20" cy="20" r="4" fill="url(#grad1)"/>
+          <defs>
+            <linearGradient id="grad1" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stop-color="#e0b040"/>
+              <stop offset="50%" stop-color="#f0950c"/>
+              <stop offset="100%" stop-color="#22c4ae"/>
+            </linearGradient>
+            <linearGradient id="grad2" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stop-color="#c8972a"/>
+              <stop offset="100%" stop-color="#1a9b8a"/>
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
+      <div class="logo-text">
+        <span class="logo-title">ZYTRIX AI</span>
+        <span class="logo-sub">Professional Image Studio</span>
+      </div>
+    </div>
 
-      <div class="upload-row">
-        <div class="upload-card" id="uploadUserCard">
-          <input type="file" id="inputUserPhoto" accept="image/*" hidden />
-          <div class="upload-inner" onclick="document.getElementById('inputUserPhoto').click()">
-            <div class="upload-icon">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div class="upload-label">FOTO DO USUÁRIO</div>
-            <div class="upload-sub">Rosto ou corpo inteiro</div>
-            <div class="upload-format">JPG · PNG · WEBP</div>
-          </div>
-          <div class="upload-preview" id="previewUser" style="display:none">
-            <img id="previewUserImg" src="" alt="user photo" />
-            <button class="preview-remove" onclick="removeUpload('user')">✕</button>
-            <div class="preview-badge">USER</div>
-          </div>
+    <div class="nav-center">
+      <span class="nav-pill active">Studio</span>
+      <span class="nav-pill">Histórico</span>
+      <span class="nav-pill">Configurações</span>
+    </div>
+
+    <div class="nav-right">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        FAL.AI ONLINE
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
+
+    <!-- LEFT PANEL -->
+    <aside class="panel-left">
+
+      <!-- MODE SELECTOR -->
+      <div class="panel-section" style="padding-top:28px;">
+        <div class="section-label">
+          <span class="section-label-text">Modo de Operação</span>
+          <div class="section-label-line"></div>
         </div>
-
-        <div class="upload-card" id="uploadRefCard">
-          <input type="file" id="inputRefPhoto" accept="image/*" hidden />
-          <div class="upload-inner" onclick="document.getElementById('inputRefPhoto').click()">
-            <div class="upload-icon">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </div>
-            <div class="upload-label">IMAGEM REFERÊNCIA</div>
-            <div class="upload-sub">Estilo, pose ou ambiente</div>
-            <div class="upload-format">JPG · PNG · WEBP</div>
-          </div>
-          <div class="upload-preview" id="previewRef" style="display:none">
-            <img id="previewRefImg" src="" alt="reference photo" />
-            <button class="preview-remove" onclick="removeUpload('ref')">✕</button>
-            <div class="preview-badge">REF</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-label" style="margin-top:32px">
-        <span class="section-num">02</span>
-        <span class="section-title">INSTRUÇÕES INTELIGENTES</span>
-      </div>
-
-      <div class="instructions-block">
-        <div class="instructions-header">
-          <span class="inst-hint">DESCREVA O RESULTADO DESEJADO</span>
-          <span class="inst-counter" id="charCounter">0 / 500</span>
-        </div>
-        <textarea
-          id="instructionsInput"
-          class="instructions-textarea"
-          maxlength="500"
-          placeholder="Ex: fundo preto elegante, luz de estúdio cinematográfica, terno social premium, expressão séria e confiante, pele natural refinada, qualidade fotográfica de estúdio..."
-          oninput="updateCounter(this)"
-        ></textarea>
-        <div class="quick-tags">
-          <div class="tags-label">ATALHOS RÁPIDOS</div>
-          <div class="tags-row">
-            <button class="tag-btn" onclick="addTag('fundo preto elegante')">fundo preto</button>
-            <button class="tag-btn" onclick="addTag('luz de estúdio cinematográfica')">luz estúdio</button>
-            <button class="tag-btn" onclick="addTag('terno social premium')">terno premium</button>
-            <button class="tag-btn" onclick="addTag('expressão séria e confiante')">expressão séria</button>
-            <button class="tag-btn" onclick="addTag('pele natural refinada')">pele natural</button>
-            <button class="tag-btn" onclick="addTag('qualidade fotográfica ultra realista')">ultra realista</button>
-            <button class="tag-btn" onclick="addTag('pose corporativa profissional')">pose corporativa</button>
-            <button class="tag-btn" onclick="addTag('iluminação dramática lateral')">luz dramática</button>
-            <button class="tag-btn" onclick="addTag('aparência executiva premium')">executivo</button>
-            <button class="tag-btn" onclick="addTag('roupa elegante de alto padrão')">roupa elegante</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-label" style="margin-top:28px">
-        <span class="section-num">03</span>
-        <span class="section-title">PARÂMETROS GERADOS</span>
-        <span class="section-badge">AUTO</span>
-      </div>
-
-      <div class="params-block" id="paramsBlock">
-        <div class="params-empty">
-          <span class="params-empty-icon">⬡</span>
-          <span>Parâmetros aparecerão aqui após análise das instruções</span>
-        </div>
-        <pre class="params-json" id="paramsJson" style="display:none"></pre>
-      </div>
-
-      <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
-        <span class="gen-btn-inner">
-          <span class="gen-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-            </svg>
-          </span>
-          <span class="gen-label">GERAR IMAGENS</span>
-          <span class="gen-count">9 VARIAÇÕES</span>
-        </span>
-        <div class="gen-btn-shimmer"></div>
-      </button>
-
-      <div class="refine-block" id="refineBlock" style="display:none">
-        <div class="refine-label">REFINAMENTO INTELIGENTE</div>
-        <div class="refine-input-row">
-          <input type="text" id="refineInput" class="refine-input" placeholder='"deixa mais elegante e com luz mais forte"' />
-          <button class="refine-btn" onclick="refineGeneration()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="1 4 1 10 7 10"/>
-              <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
-            </svg>
-            REFINAR
+        <div class="mode-selector">
+          <button class="mode-btn active" id="modeBtn1" onclick="setMode(1)">
+            <span class="mode-btn-icon">🖼️</span>
+            <span class="mode-btn-label">Foto +<br>Referência</span>
+          </button>
+          <button class="mode-btn" id="modeBtn2" onclick="setMode(2)">
+            <span class="mode-btn-icon">✍️</span>
+            <span class="mode-btn-label">Foto +<br>Texto</span>
+          </button>
+          <button class="mode-btn" id="modeBtn3" onclick="setMode(3)">
+            <span class="mode-btn-icon">⚙️</span>
+            <span class="mode-btn-label">Foto +<br>JSON</span>
           </button>
         </div>
       </div>
 
-    </section>
+      <div class="section-divider"></div>
 
-    <!-- RIGHT COLUMN -->
-    <section class="result-column">
-
-      <div class="result-header">
+      <!-- FOTO PRINCIPAL -->
+      <div class="panel-section">
         <div class="section-label">
-          <span class="section-num">04</span>
-          <span class="section-title">GALERIA DE RESULTADOS</span>
+          <span class="section-label-text">Foto Principal</span>
+          <div class="section-label-line"></div>
         </div>
-        <div class="result-actions" id="resultActions" style="display:none">
-          <button class="action-small" onclick="downloadAll()">↓ BAIXAR TODOS</button>
-          <button class="action-small" onclick="clearResults()">✕ LIMPAR</button>
-        </div>
-      </div>
-
-      <div class="grid-container" id="gridContainer">
-        <div class="grid-placeholder">
-          <div class="placeholder-icon">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.25">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
+        <div class="upload-zone" id="uploadZone1"
+          ondragover="handleDrag(event,'uploadZone1')"
+          ondragleave="handleDragLeave('uploadZone1')"
+          ondrop="handleDrop(event,'photoFile','uploadZone1','photoPreview','photoName')">
+          <input type="file" accept="image/*" onchange="handleFile(this,'photoFile','uploadZone1','photoPreview','photoName')" />
+          <img class="upload-preview" id="photoPreview" alt="Preview" />
+          <div class="upload-placeholder">
+            <div class="upload-icon">👤</div>
+            <div class="upload-title">Foto do Rosto</div>
+            <div class="upload-hint">JPG, PNG, WEBP — até 10MB</div>
           </div>
-          <div class="placeholder-text">AGUARDANDO GERAÇÃO</div>
-          <div class="placeholder-sub">Configure os parâmetros e clique em GERAR IMAGENS</div>
-          <div class="placeholder-grid-preview">
-            <div class="ph-cell"></div><div class="ph-cell"></div><div class="ph-cell"></div>
-            <div class="ph-cell"></div><div class="ph-cell"></div><div class="ph-cell"></div>
-            <div class="ph-cell"></div><div class="ph-cell"></div><div class="ph-cell"></div>
+          <div class="upload-filename" id="photoName"></div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- BLOCO REFERÊNCIA (Modo 1) -->
+      <div id="refBlock">
+        <div class="panel-section">
+          <div class="section-label">
+            <span class="section-label-text">Imagem de Referência</span>
+            <div class="section-label-line"></div>
+          </div>
+          <p class="mode-desc">Envie uma foto profissional. A IA vai recriar aquele estilo mantendo seu rosto real.</p>
+          <div style="height:12px"></div>
+          <div class="upload-zone" id="uploadZone2"
+            ondragover="handleDrag(event,'uploadZone2')"
+            ondragleave="handleDragLeave('uploadZone2')"
+            ondrop="handleDrop(event,'refFile','uploadZone2','refPreview','refName')">
+            <input type="file" accept="image/*" onchange="handleFile(this,'refFile','uploadZone2','refPreview','refName')" />
+            <img class="upload-preview" id="refPreview" alt="Preview" />
+            <div class="upload-placeholder">
+              <div class="upload-icon">🎨</div>
+              <div class="upload-title">Referência Estética</div>
+              <div class="upload-hint">Foto do estilo desejado</div>
+            </div>
+            <div class="upload-filename" id="refName"></div>
           </div>
         </div>
+        <div class="section-divider"></div>
       </div>
 
-      <div class="progress-block" id="progressBlock" style="display:none">
-        <div class="progress-header">
-          <span class="progress-label">GERANDO VARIAÇÕES</span>
-          <span class="progress-count" id="progressCount">0 / 9</span>
+      <!-- BLOCO PROMPT / JSON (Modos 2 e 3) -->
+      <div id="promptBlock" class="hidden">
+        <div class="panel-section">
+          <div class="section-label">
+            <span class="section-label-text" id="promptLabel">Descrição / JSON</span>
+            <div class="section-label-line"></div>
+          </div>
+          <p class="mode-desc" id="promptDesc">Descreva o estilo, ou cole um JSON completo. O sistema detecta automaticamente.</p>
+          <div style="height:12px"></div>
+          <div class="prompt-area">
+            <textarea
+              class="prompt-textarea"
+              id="promptText"
+              placeholder="Ex: terno preto premium, fundo escuro, luz cinematográfica..."
+              oninput="onPromptInput()"
+            ></textarea>
+            <div class="prompt-meta">
+              <span class="prompt-type-badge type-text" id="promptTypeBadge">TEXTO</span>
+              <span class="prompt-char-count" id="charCount">0 caracteres</span>
+            </div>
+          </div>
         </div>
-        <div class="progress-bar-track">
-          <div class="progress-bar-fill" id="progressFill"></div>
+
+        <!-- ATALHOS RÁPIDOS -->
+        <div class="panel-section" style="padding-top:16px;">
+          <div class="section-label">
+            <span class="section-label-text">Atalhos Rápidos</span>
+            <div class="section-label-line"></div>
+          </div>
+          <div class="quick-tags">
+            <span class="quick-tag" onclick="addTag('terno preto premium, fundo escuro, luz dramática')">Executivo</span>
+            <span class="quick-tag" onclick="addTag('terno azul marinho, fundo branco clean, luz suave')">Corporativo</span>
+            <span class="quick-tag" onclick="addTag('look casual premium, ambiente moderno, luz natural')">Casual Premium</span>
+            <span class="quick-tag" onclick="addTag('look esportivo de alto desempenho, fundo dinâmico')">Atlético</span>
+            <span class="quick-tag" onclick="addTag('fundo desfocado bokeh, iluminação cinematográfica, editorial')">Editorial</span>
+            <span class="quick-tag" onclick="addTag('ambiente urbano premium, luz lateral suave, look moderno')">Urbano</span>
+            <span class="quick-tag" onclick="addTag('blazer elegante, luz estúdio profissional, fundo neutro')">Estúdio</span>
+            <span class="quick-tag" onclick="addTag('look luxo, ambiente sofisticado, iluminação quente')">Luxo</span>
+          </div>
         </div>
-        <div class="progress-log" id="progressLog"></div>
+        <div class="section-divider"></div>
       </div>
 
-    </section>
-  </main>
-
-  <!-- LIGHTBOX -->
-  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-    <div class="lightbox-inner">
-      <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-      <img id="lightboxImg" src="" alt="expanded image" />
-      <div class="lightbox-info" id="lightboxInfo"></div>
-      <div class="lightbox-actions">
-        <button class="lb-btn" onclick="downloadLightbox()">↓ BAIXAR</button>
-        <button class="lb-btn" onclick="favoriteFromLightbox()">♡ FAVORITAR</button>
-        <button class="lb-btn" onclick="redoVariation()">↺ REFAZER</button>
+      <!-- API KEY -->
+      <div class="panel-section">
+        <div class="section-label">
+          <span class="section-label-text">API Key — FAL.AI</span>
+          <div class="section-label-line"></div>
+        </div>
+        <div class="api-row">
+          <input type="password" class="api-input" id="apiKeyInput"
+            placeholder="••••••••••••••••••••••••"
+            value="8fa5fe7f-472c-45b7-94f9-039b3715248c:0c9f4b76dace16a94b9c25ad882d26a0" />
+          <button class="api-save-btn" onclick="saveApiKey()">SALVAR</button>
+        </div>
       </div>
-    </div>
+
+      <!-- GENERATE -->
+      <div class="generate-btn-wrapper">
+        <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
+          <span class="generate-btn-inner">
+            <span>⚡</span>
+            <span>GERAR 9 IMAGENS</span>
+          </span>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- RIGHT PANEL -->
+    <main class="panel-right">
+
+      <div class="panel-right-header">
+        <div class="output-title">OUTPUT STUDIO</div>
+        <div class="output-stats">
+          <div class="stat-chip">Geradas: <span id="statGenerated">0</span></div>
+          <div class="stat-chip">Favoritas: <span id="statFav">0</span></div>
+          <div class="stat-chip">Sessão: <span id="statSession">0</span></div>
+        </div>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-glyph">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="40,4 76,24 76,56 40,76 4,56 4,24" stroke="#c8972a" stroke-width="1.5" fill="none"/>
+            <circle cx="40" cy="40" r="16" stroke="#c8972a" stroke-width="1" stroke-dasharray="4 4"/>
+            <circle cx="40" cy="40" r="6" fill="#c8972a" opacity="0.6"/>
+          </svg>
+          <div class="empty-state-ring"></div>
+          <div class="empty-state-ring-2"></div>
+        </div>
+        <div class="empty-state-title">PRONTO PARA CRIAR</div>
+        <div class="empty-state-desc">
+          Envie sua foto, escolha o modo de operação e clique em
+          <strong style="color:var(--gold)">GERAR 9 IMAGENS</strong>.<br/>
+          O ZYTRIX AI cria imagens profissionais preservando sua identidade real.
+        </div>
+      </div>
+
+      <!-- OUTPUT GRID -->
+      <div class="output-scroll hidden" id="outputScroll">
+        <div class="image-grid" id="imageGrid"></div>
+      </div>
+
+    </main>
   </div>
+</div>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <span class="footer-logo">ZYTRIX AI</span>
-      <span class="footer-sep">·</span>
-      <span class="footer-copy">PROFESSIONAL PORTRAIT INTELLIGENCE</span>
-      <span class="footer-sep">·</span>
-      <span class="footer-version">BUILD 2.1.0</span>
-    </div>
-  </footer>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
