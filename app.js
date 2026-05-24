@@ -1,573 +1,450 @@
-/* ═══════════════════════════════════════
-   ZYTRIX AI — APPLICATION LOGIC
-═══════════════════════════════════════ */
+// ─────────────────────────────────────────────────────────────
+//  ZYTRIX AI — app.js
+//  Frontend puro — sem chave de API exposta
+//  Todas as chamadas vão para o Cloudflare Worker
+// ─────────────────────────────────────────────────────────────
 
-let currentMode    = 1;
-let photoFile      = null;
-let refFile        = null;
-let currentPromptJSON = null;
-let generatedImages   = [];
-let favCount       = 0;
-let sessionCount   = 0;
-let lightboxIndex  = -1;
+// ── CONFIGURE AQUI: URL do seu Cloudflare Worker ──
+const WORKER_URL = "https://SEU_WORKER.SEU_USUARIO.workers.dev";
 
-const FAL_KEY_DEFAULT = '8fa5fe7f-472c-45b7-94f9-039b3715248c:0c9f4b76dace16a94b9c25ad882d26a0';
+// ── STATE ──
+const state = {
+  fotoBase64: null,
+  fotoMime: null,
+  refBase64: null,
+  refMime: null,
+  activeTab: "foto-ref",
+  qty: 3,
+  modoTeste: false,
+  generating: false,
+  generatedImages: []
+};
 
-/* ── API KEY ── */
-function getApiKey() {
-  return document.getElementById('apiKeyInput').value.trim() || FAL_KEY_DEFAULT;
+// ── ATALHOS ──
+const ATALHOS = [
+  { label: "Advogado",   prompt: "advogado sentado em escritório premium, terno escuro impecável, postura séria e confiante, fundo escuro desfocado, iluminação cinematográfica lateral" },
+  { label: "Médico",     prompt: "médico profissional com jaleco branco imaculado, consultório moderno ao fundo, iluminação suave e clínica, expressão confiante" },
+  { label: "Empresária", prompt: "empresária executiva, blazer elegante, ambiente corporativo moderno, luz natural lateral, composição editorial fashion" },
+  { label: "Executivo",  prompt: "executivo corporativo, terno premium, escritório de vidro ao fundo, iluminação cinematográfica, postura poderosa" },
+  { label: "Dentista",   prompt: "dentista profissional com jaleco, clínica moderna e sofisticada, sorriso confiante, iluminação clean" },
+  { label: "Consultor",  prompt: "consultor de negócios, visual smart-casual premium, sala de reunião moderna, iluminação suave" },
+  { label: "Corretor",   prompt: "corretor de imóveis, traje social elegante, ambiente premium, sorriso profissional" },
+  { label: "Engenheiro", prompt: "engenheiro profissional, visual técnico premium, escritório de projetos moderno, postura competente" },
+  { label: "Psicólogo",  prompt: "psicólogo em consultório sofisticado, expressão empática e calma, iluminação suave e acolhedora" },
+  { label: "Professor",  prompt: "professor universitário, biblioteca moderna ao fundo, visual intelectual elegante, postura didática" }
+];
+
+// ── INIT ──
+document.addEventListener("DOMContentLoaded", () => {
+  buildShortcuts();
+  bindEvents();
+});
+
+// ── ATALHOS ──
+function buildShortcuts() {
+  const wrap = document.getElementById("shortcuts");
+  ATALHOS.forEach(item => {
+    const btn = document.createElement("button");
+    btn.className = "shortcut";
+    btn.textContent = item.label;
+    btn.addEventListener("click", () => {
+      const ta = document.getElementById("textoInput");
+      ta.value = item.prompt;
+      ta.focus();
+    });
+    wrap.appendChild(btn);
+  });
 }
 
-function saveApiKey() {
-  showToast('✓ API Key salva com sucesso');
-}
+// ── EVENTOS ──
+function bindEvents() {
+  document.getElementById("fotoInput").addEventListener("change", e => handleUpload(e, "foto"));
+  document.getElementById("refInput").addEventListener("change", e => handleUpload(e, "ref"));
 
-/* ════════════════════════
-   MODE SWITCHING
-════════════════════════ */
-function setMode(m) {
-  currentMode = m;
+  setupDragDrop("uploadArea1", "foto");
+  setupDragDrop("uploadArea2", "ref");
 
-  document.querySelectorAll('.mode-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i + 1 === m);
+  document.querySelectorAll(".tab").forEach(t =>
+    t.addEventListener("click", () => switchTab(t.dataset.tab))
+  );
+
+  document.querySelectorAll(".qty-btn").forEach(b =>
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".qty-btn").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      state.qty = parseInt(b.dataset.qty);
+    })
+  );
+
+  document.getElementById("modoTeste").addEventListener("change", e => {
+    state.modoTeste = e.target.checked;
   });
 
-  const refBlock    = document.getElementById('refBlock');
-  const promptBlock = document.getElementById('promptBlock');
-  const promptLabel = document.getElementById('promptLabel');
-  const promptDesc  = document.getElementById('promptDesc');
-  const promptText  = document.getElementById('promptText');
+  document.getElementById("clearJohnson").addEventListener("click", () => {
+    document.getElementById("johnsonInput").value = "";
+  });
 
-  if (m === 1) {
-    refBlock.classList.remove('hidden');
-    promptBlock.classList.add('hidden');
-  } else if (m === 2) {
-    refBlock.classList.add('hidden');
-    promptBlock.classList.remove('hidden');
-    promptLabel.textContent = 'Descrição do Estilo';
-    promptDesc.textContent  = 'Descreva como quer aparecer. Ex: terno preto, luz cinematográfica, executivo.';
-    promptText.placeholder  = 'terno preto premium, fundo escuro, luz cinematográfica, executivo profissional...';
-  } else {
-    refBlock.classList.add('hidden');
-    promptBlock.classList.remove('hidden');
-    promptLabel.textContent = 'JSON de Configuração';
-    promptDesc.textContent  = 'Cole o JSON completo. O sistema detecta e processa automaticamente em segundo plano.';
-    promptText.placeholder  = '{"style":"executive","lighting":"cinematic","background":"dark studio",...}';
-  }
+  document.getElementById("clearTexto").addEventListener("click", () => {
+    document.getElementById("textoInput").value = "";
+  });
 
-  // reset prompt state on mode switch
-  currentPromptJSON = null;
-  onPromptInput();
+  document.getElementById("btnGerar").addEventListener("click", handleGerar);
+  document.getElementById("btnDownloadAll").addEventListener("click", downloadAll);
 }
 
-/* ════════════════════════
-   FILE UPLOADS
-════════════════════════ */
-function handleFile(input, varName, zoneId, previewId, nameId) {
-  const file = input.files[0];
+// ── UPLOAD ──
+function handleUpload(e, tipo) {
+  const file = e.target.files[0];
   if (!file) return;
-  storeFile(varName, file);
-  activateZone(file, zoneId, previewId, nameId);
-}
+  if (!file.type.startsWith("image/")) { showError("Apenas imagens são aceitas."); return; }
+  if (file.size > 5 * 1024 * 1024) { showError("Imagem muito grande. Use até 5MB."); return; }
 
-function storeFile(varName, file) {
-  if (varName === 'photoFile') photoFile = file;
-  if (varName === 'refFile')   refFile   = file;
-}
-
-function activateZone(file, zoneId, previewId, nameId) {
-  const zone    = document.getElementById(zoneId);
-  const preview = document.getElementById(previewId);
-  const nameEl  = document.getElementById(nameId);
-  zone.classList.add('has-file');
-  nameEl.textContent = '✓ ' + file.name;
   const reader = new FileReader();
-  reader.onload = e => { preview.src = e.target.result; };
+  reader.onload = ev => {
+    const base64 = ev.target.result.split(",")[1];
+    if (tipo === "foto") {
+      state.fotoBase64 = base64;
+      state.fotoMime = file.type;
+      showPreview("fotoPreview", "fotoName", ev.target.result, file.name);
+      document.getElementById("card-foto").classList.add("active");
+    } else {
+      state.refBase64 = base64;
+      state.refMime = file.type;
+      showPreview("refPreview", "refName", ev.target.result, file.name);
+    }
+  };
   reader.readAsDataURL(file);
 }
 
-function handleDrag(e, zoneId) {
-  e.preventDefault();
-  document.getElementById(zoneId).classList.add('drag-over');
+function showPreview(previewId, nameId, src, name) {
+  const img = document.getElementById(previewId);
+  img.src = src;
+  img.style.display = "block";
+  const nameEl = document.getElementById(nameId);
+  nameEl.textContent = "✓ " + name;
+  nameEl.style.display = "block";
 }
 
-function handleDragLeave(zoneId) {
-  document.getElementById(zoneId).classList.remove('drag-over');
-}
-
-function handleDrop(e, varName, zoneId, previewId, nameId) {
-  e.preventDefault();
-  document.getElementById(zoneId).classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (!file) return;
-  storeFile(varName, file);
-  activateZone(file, zoneId, previewId, nameId);
-}
-
-/* ════════════════════════
-   PROMPT / JSON DETECTION
-   — always reprocessed from scratch on every keystroke
-════════════════════════ */
-function onPromptInput() {
-  const textarea  = document.getElementById('promptText');
-  const badge     = document.getElementById('promptTypeBadge');
-  const charCount = document.getElementById('charCount');
-  const val       = textarea ? textarea.value : '';
-
-  if (charCount) charCount.textContent = val.length + ' caracteres';
-
-  // reset every time — never cache old result
-  currentPromptJSON = null;
-
-  if (!val.trim()) {
-    if (badge) {
-      badge.textContent = 'TEXTO';
-      badge.className   = 'prompt-type-badge type-text';
-    }
-    return;
-  }
-
-  const trimmed = val.trim();
-
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    try {
-      currentPromptJSON = JSON.parse(trimmed);
-      if (badge) {
-        badge.textContent = 'JSON DETECTADO';
-        badge.className   = 'prompt-type-badge type-json';
-      }
-    } catch {
-      currentPromptJSON = null;
-      if (badge) {
-        badge.textContent = 'JSON INVÁLIDO';
-        badge.className   = 'prompt-type-badge type-json';
-      }
-    }
-  } else {
-    currentPromptJSON = null;
-    if (badge) {
-      badge.textContent = 'TEXTO';
-      badge.className   = 'prompt-type-badge type-text';
-    }
-  }
-}
-
-function addTag(tagText) {
-  const ta = document.getElementById('promptText');
-  ta.value = tagText;
-  onPromptInput(); // reprocess from scratch
-  ta.focus();
-}
-
-/* ════════════════════════
-   FILE → BASE64
-════════════════════════ */
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = e => resolve(e.target.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+// ── DRAG & DROP ──
+function setupDragDrop(areaId, tipo) {
+  const area = document.getElementById(areaId);
+  area.addEventListener("dragover", e => { e.preventDefault(); area.classList.add("drag"); });
+  area.addEventListener("dragleave", () => area.classList.remove("drag"));
+  area.addEventListener("drop", e => {
+    e.preventDefault();
+    area.classList.remove("drag");
+    const file = e.dataTransfer.files[0];
+    if (file) handleUpload({ target: { files: [file] } }, tipo);
   });
 }
 
-/* ════════════════════════
-   BUILD FINAL PROMPT
-   — reads current state fresh every time
-════════════════════════ */
-function buildPromptText() {
-  const baseQuality = 'Ultra-realistic professional studio photograph, photorealistic, commercial quality, sharp facial focus, cinematic color grade, 8K resolution, preserve exact facial identity and likeness.';
-
-  if (currentMode === 1) {
-    return `${baseQuality} Recreate the aesthetic style from the reference image: lighting, background, composition, clothing style. The person's face must remain identical.`;
-  }
-
-  if (currentMode === 2) {
-    const desc = document.getElementById('promptText').value.trim();
-    return `${baseQuality} Style details: ${desc}.`;
-  }
-
-  if (currentMode === 3) {
-    // if valid JSON was parsed, extract structured prompt
-    if (currentPromptJSON) {
-      const j = currentPromptJSON;
-
-      // if JSON already has a full prompt string, use it
-      if (j.prompt && typeof j.prompt === 'string') {
-        return j.prompt;
-      }
-
-      // otherwise build from JSON fields
-      const parts = [];
-      if (j.style)      parts.push('style: '      + j.style);
-      if (j.lighting)   parts.push('lighting: '   + j.lighting);
-      if (j.background) parts.push('background: ' + j.background);
-      if (j.clothing)   parts.push('clothing: '   + j.clothing);
-      if (j.mood)       parts.push('mood: '       + j.mood);
-      if (j.camera)     parts.push('camera: '     + j.camera);
-      if (j.color)      parts.push('color grade: '+ j.color);
-
-      return `${baseQuality} ${parts.join(', ')}.`;
-    }
-
-    // fallback: treat as plain text
-    const raw = document.getElementById('promptText').value.trim();
-    return `${baseQuality} ${raw}.`;
-  }
-
-  return baseQuality;
+// ── TABS ──
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + tab));
 }
 
-/* ════════════════════════
-   FAL.AI API CALL
-════════════════════════ */
-async function callFalAI(promptText, photoBase64, refBase64, seed) {
-  const key = getApiKey();
+// ── ERRO ──
+function showError(msg) {
+  const box = document.getElementById("errorBox");
+  box.textContent = "⚠ " + msg;
+  box.style.display = "block";
+  setTimeout(() => { box.style.display = "none"; }, 8000);
+}
 
-  const useImageToImage = !!photoBase64;
-  const endpoint = useImageToImage
-    ? 'https://fal.run/fal-ai/flux/dev/image-to-image'
-    : 'https://fal.run/fal-ai/flux/dev';
+function hideError() {
+  document.getElementById("errorBox").style.display = "none";
+}
+
+// ── STATUS BAR ──
+function setStatus(current, total) {
+  const bar = document.getElementById("statusBar");
+  const fill = document.getElementById("statusFill");
+  bar.style.display = "block";
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+  fill.style.width = pct + "%";
+}
+
+function hideStatus() {
+  document.getElementById("statusBar").style.display = "none";
+  document.getElementById("statusFill").style.width = "0%";
+}
+
+// ── CHAMAR WORKER /analyze ──
+async function callAnalyze(variationIndex) {
+  const contexto = state.activeTab === "johnson"
+    ? document.getElementById("johnsonInput").value.trim()
+    : state.activeTab === "texto"
+      ? document.getElementById("textoInput").value.trim()
+      : "";
 
   const body = {
-    prompt:               promptText,
-    image_size:           'portrait_4_3',
-    num_inference_steps:  28,
-    guidance_scale:       3.5,
-    num_images:           1,
-    enable_safety_checker: false,
-    seed:                 seed
+    fotoBase64: state.fotoBase64,
+    fotoMime: state.fotoMime,
+    activeTab: state.activeTab,
+    variationIndex,
+    contexto
   };
 
-  if (useImageToImage) {
-    body.image_url = 'data:image/jpeg;base64,' + photoBase64;
-    body.strength  = 0.72;
+  if (state.activeTab === "foto-ref" && state.refBase64) {
+    body.refBase64 = state.refBase64;
+    body.refMime = state.refMime;
   }
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Key ' + key,
-      'Content-Type':  'application/json'
-    },
+  const resp = await fetch(`${WORKER_URL}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error('FAL ' + response.status + ': ' + errText.substring(0, 120));
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: "Erro no servidor" }));
+    throw new Error(err.error || `HTTP ${resp.status}`);
   }
 
-  const data = await response.json();
-
-  if (data.images && data.images.length > 0) return data.images[0].url;
-  if (data.image)                             return data.image.url || data.image;
-
-  throw new Error('Resposta inesperada da API FAL.AI');
+  const data = await resp.json();
+  return data.description;
 }
 
-/* ════════════════════════
-   LOADING SYSTEM
-════════════════════════ */
-const LOADING_MESSAGES = [
-  'Inicializando redes neurais...',
-  'Analisando identidade facial...',
-  'Processando referências visuais...',
-  'Calibrando modelo generativo...',
-  'Aplicando correção de iluminação...',
-  'Renderizando detalhes faciais...',
-  'Refinando qualidade cinemática...',
-  'Otimizando resolução comercial...',
-  'Finalizando composição...'
-];
-
-let loadingInterval = null;
-let statusIndex     = 0;
-
-function showLoading() {
-  document.getElementById('loadingOverlay').classList.add('active');
-  document.getElementById('loadingBar').style.width = '0%';
-  document.getElementById('loadingCount').textContent = '0 / 9 imagens';
-  statusIndex = 0;
-  document.getElementById('loadingStatus').textContent = LOADING_MESSAGES[0];
-  loadingInterval = setInterval(() => {
-    statusIndex = (statusIndex + 1) % LOADING_MESSAGES.length;
-    document.getElementById('loadingStatus').textContent = LOADING_MESSAGES[statusIndex];
-  }, 2200);
-}
-
-function updateLoadingProgress(done) {
-  const pct = Math.round((done / 9) * 100);
-  document.getElementById('loadingBar').style.width = pct + '%';
-  document.getElementById('loadingCount').textContent = done + ' / 9 imagens';
-}
-
-function hideLoading() {
-  clearInterval(loadingInterval);
-  document.getElementById('loadingOverlay').classList.remove('active');
-}
-
-/* ════════════════════════
-   MAIN GENERATION
-════════════════════════ */
-async function startGeneration() {
-  // validations
-  if (!photoFile) {
-    showToast('⚠ Envie uma foto primeiro');
-    return;
-  }
-  if (currentMode === 1 && !refFile) {
-    showToast('⚠ Envie uma imagem de referência');
-    return;
-  }
-  if ((currentMode === 2 || currentMode === 3) && !document.getElementById('promptText').value.trim()) {
-    showToast('⚠ Preencha a descrição ou JSON');
-    return;
-  }
-
-  document.getElementById('generateBtn').disabled = true;
-  showLoading();
-
-  // reset output
-  generatedImages = [];
-  const grid = document.getElementById('imageGrid');
-  grid.innerHTML = '';
-  document.getElementById('emptyState').classList.add('hidden');
-  document.getElementById('outputScroll').classList.remove('hidden');
-
-  // spawn 9 skeleton cards
-  for (let i = 0; i < 9; i++) {
-    grid.appendChild(createSkeletonCard(i));
-  }
-
-  // encode files once
-  let photoBase64 = null;
-  let refBase64   = null;
-  try {
-    photoBase64 = await fileToBase64(photoFile);
-    if (refFile) refBase64 = await fileToBase64(refFile);
-  } catch (err) {
-    showToast('❌ Erro ao processar imagens locais');
-    hideLoading();
-    document.getElementById('generateBtn').disabled = false;
-    return;
-  }
-
-  // build prompt once (fresh read — no cache)
-  const promptText = buildPromptText();
-
-  // generate all 9 in parallel
-  let doneCount = 0;
-
-  const tasks = Array.from({ length: 9 }, (_, i) => {
-    const seed = Math.floor(Math.random() * 999999) + i * 13;
-    return callFalAI(promptText, photoBase64, refBase64, seed)
-      .then(url => {
-        doneCount++;
-        updateLoadingProgress(doneCount);
-        swapCardWithImage(i, url);
-        generatedImages[i] = url;
-      })
-      .catch(err => {
-        doneCount++;
-        updateLoadingProgress(doneCount);
-        swapCardWithError(i, err.message);
-        generatedImages[i] = null;
-        console.error('[ZYTRIX] Card', i, err);
-      });
+// ── CHAMAR WORKER /generate ──
+async function callGenerate(description, index) {
+  const resp = await fetch(`${WORKER_URL}/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ description, index })
   });
 
-  await Promise.allSettled(tasks);
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: "Erro ao gerar imagem" }));
+    throw new Error(err.error || `HTTP ${resp.status}`);
+  }
 
-  hideLoading();
-  document.getElementById('generateBtn').disabled = false;
-
-  const successCount = generatedImages.filter(Boolean).length;
-  sessionCount += successCount;
-  document.getElementById('statGenerated').textContent = successCount;
-  document.getElementById('statSession').textContent   = sessionCount;
-
-  showToast(`✓ ${successCount} imagens geradas com sucesso`);
+  const data = await resp.json();
+  return data.imageUrl;
 }
 
-/* ════════════════════════
-   CARD HELPERS
-════════════════════════ */
-function createSkeletonCard(i) {
-  const card = document.createElement('div');
-  card.className = 'image-card';
-  card.id = 'card-' + i;
-  card.style.animationDelay = (i * 0.06) + 's';
+// ── PRÉ-CARREGAR IMAGEM ──
+function preloadImage(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = resolve;
+    img.onerror = resolve;
+    img.src = url;
+    setTimeout(resolve, 35000);
+  });
+}
+
+// ── HANDLER PRINCIPAL ──
+async function handleGerar() {
+  hideError();
+  hideStatus();
+
+  if (!state.fotoBase64) {
+    showError("Envie a foto principal antes de gerar (Bloco 1 é obrigatório).");
+    return;
+  }
+
+  if (state.generating) return;
+  state.generating = true;
+  state.generatedImages = [];
+
+  const btn = document.getElementById("btnGerar");
+  const btnLabel = document.getElementById("btnLabel");
+  btn.disabled = true;
+  btnLabel.textContent = "⏳ Iniciando...";
+
+  const resultSection = document.getElementById("resultSection");
+  const grid = document.getElementById("imageGrid");
+  resultSection.style.display = "block";
+  grid.innerHTML = "";
+  document.getElementById("resultTitle").textContent = `Gerando ${state.qty} imagens...`;
+
+  // Criar placeholders
+  const placeholders = [];
+  for (let i = 0; i < state.qty; i++) {
+    const ph = createPlaceholderCard(i);
+    grid.appendChild(ph);
+    placeholders.push(ph);
+  }
+
+  resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  let successCount = 0;
+
+  for (let i = 0; i < state.qty; i++) {
+    try {
+      btnLabel.textContent = `⏳ Imagem ${i + 1} de ${state.qty}`;
+      setStatus(i, state.qty);
+
+      // Passo 1: Claude analisa e descreve
+      const description = await callAnalyze(i);
+
+      // Passo 2: Worker retorna URL da imagem
+      const imageUrl = await callGenerate(description, i);
+
+      // Passo 3: Aguarda imagem carregar
+      await preloadImage(imageUrl);
+
+      state.generatedImages[i] = imageUrl;
+      const card = createImageCard(imageUrl, i, state.modoTeste);
+      placeholders[i].replaceWith(card);
+      successCount++;
+
+    } catch (err) {
+      console.error(`[ZYTRIX] Imagem ${i + 1} falhou:`, err);
+      placeholders[i].replaceWith(createErrorCard(i, err.message));
+    }
+  }
+
+  setStatus(state.qty, state.qty);
+
+  document.getElementById("resultTitle").textContent =
+    successCount === state.qty
+      ? `✓ ${state.qty} imagens geradas`
+      : `${successCount} de ${state.qty} imagens geradas`;
+
+  setTimeout(hideStatus, 1200);
+  btn.disabled = false;
+  btnLabel.textContent = "⚡ GERAR IMAGENS";
+  state.generating = false;
+}
+
+// ── PLACEHOLDER ──
+function createPlaceholderCard(index) {
+  const card = document.createElement("div");
+  card.className = "img-card";
+  card.id = `ph-${index}`;
   card.innerHTML = `
-    <div class="card-skeleton">
-      <div class="skeleton-icon">✦</div>
-      <div class="skeleton-label">Gerando #${i + 1}</div>
-    </div>
-    <div class="card-index">#${String(i + 1).padStart(2, '0')}</div>
-    <div class="card-fav-badge">★</div>
-    <div class="card-overlay">
-      <div class="card-actions">
-        <button class="card-action-btn" onclick="openLightbox(${i})">🔍 Ampliar</button>
-        <button class="card-action-btn" onclick="downloadImage(${i})">⬇ Baixar</button>
-        <button class="card-action-btn" onclick="regenCard(${i})">↻ Regen</button>
-        <button class="card-action-btn fav" id="fav-${i}" onclick="toggleFav(${i})">★</button>
-      </div>
+    <div class="img-card-placeholder">
+      <div class="spin"></div>
+      <span>Gerando</span>
     </div>
   `;
   return card;
 }
 
-function swapCardWithImage(i, url) {
-  const card = document.getElementById('card-' + i);
-  if (!card) return;
-  const skeleton = card.querySelector('.card-skeleton');
-  if (skeleton) skeleton.remove();
-  const img = document.createElement('img');
-  img.src = url;
-  img.alt = 'ZYTRIX #' + (i + 1);
-  img.loading = 'lazy';
-  card.insertBefore(img, card.firstChild);
-  card.onclick = () => openLightbox(i);
-}
+// ── CARD COM IMAGEM ──
+function createImageCard(imageUrl, index, watermark) {
+  const card = document.createElement("div");
+  card.className = "img-card";
 
-function swapCardWithError(i, message) {
-  const card = document.getElementById('card-' + i);
-  if (!card) return;
-  const skeleton = card.querySelector('.card-skeleton');
-  if (skeleton) {
-    skeleton.style.animation  = 'none';
-    skeleton.style.background = 'var(--graphite-800)';
-    skeleton.innerHTML = `
-      <div style="color:#ff6060;font-size:22px;margin-bottom:8px;">⚠</div>
-      <div style="color:#ff6060;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;">Erro na geração</div>
-      <div style="color:var(--silver-500);font-family:var(--font-mono);font-size:9px;margin-top:6px;padding:0 12px;text-align:center;">${message.substring(0, 80)}</div>
-    `;
-  }
-}
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "position:relative; overflow:hidden;";
 
-/* ════════════════════════
-   LIGHTBOX
-════════════════════════ */
-function openLightbox(i) {
-  const url = generatedImages[i];
-  if (!url) return;
-  lightboxIndex = i;
-  document.getElementById('lightboxImg').src = url;
-  document.getElementById('lightbox').classList.add('active');
-}
+  const img = document.createElement("img");
+  img.src = imageUrl;
+  img.alt = `Imagem ${index + 1}`;
+  img.loading = "lazy";
 
-function closeLightbox(e) {
-  if (!e || e.target.id === 'lightbox') {
-    document.getElementById('lightbox').classList.remove('active');
-    lightboxIndex = -1;
-  }
-}
+  wrapper.appendChild(img);
 
-function downloadLightbox() {
-  if (lightboxIndex >= 0) downloadImage(lightboxIndex);
-}
-
-function regenLightbox() {
-  if (lightboxIndex < 0) return;
-  const idx = lightboxIndex;
-  closeLightbox();
-  regenCard(idx);
-}
-
-function favLightbox() {
-  if (lightboxIndex >= 0) toggleFav(lightboxIndex);
-}
-
-/* ════════════════════════
-   IMAGE ACTIONS
-════════════════════════ */
-function downloadImage(i) {
-  const url = generatedImages[i];
-  if (!url) return;
-  const a = document.createElement('a');
-  a.href     = url;
-  a.download = 'ZYTRIX_' + String(i + 1).padStart(2, '0') + '.jpg';
-  a.target   = '_blank';
-  a.click();
-  showToast('⬇ Baixando imagem #' + (i + 1));
-}
-
-async function regenCard(i) {
-  const card = document.getElementById('card-' + i);
-  if (!card) return;
-
-  // remove existing image
-  const img = card.querySelector('img');
-  if (img) img.remove();
-
-  // show fresh skeleton
-  let skeleton = card.querySelector('.card-skeleton');
-  if (!skeleton) {
-    skeleton = document.createElement('div');
-    skeleton.className = 'card-skeleton';
-    card.insertBefore(skeleton, card.firstChild);
-  }
-  skeleton.style.animation  = '';
-  skeleton.style.background = '';
-  skeleton.innerHTML = `<div class="skeleton-icon">✦</div><div class="skeleton-label">Regenerando...</div>`;
-
-  if (!photoFile) { showToast('⚠ Foto principal não encontrada'); return; }
-
-  let photoBase64 = null;
-  let refBase64   = null;
-  try {
-    photoBase64 = await fileToBase64(photoFile);
-    if (refFile) refBase64 = await fileToBase64(refFile);
-  } catch {
-    showToast('❌ Erro ao processar arquivo');
-    return;
+  if (watermark) {
+    const wm = document.createElement("div");
+    wm.className = "watermark-overlay";
+    wm.innerHTML = `<span class="watermark-text">ZYTRIX AI</span>`;
+    wrapper.appendChild(wm);
   }
 
-  // fresh prompt read — no cache
-  const promptText = buildPromptText();
-  const seed       = Math.floor(Math.random() * 999999) + 200 + i;
+  const actions = document.createElement("div");
+  actions.className = "img-card-actions";
+
+  const dlBtn = document.createElement("button");
+  dlBtn.className = "img-action-btn";
+  dlBtn.textContent = "⬇ Baixar";
+  dlBtn.addEventListener("click", () => downloadImage(imageUrl, `zytrix-${index + 1}.jpg`));
+
+  const regenBtn = document.createElement("button");
+  regenBtn.className = "img-action-btn";
+  regenBtn.textContent = "↺ Gerar";
+  regenBtn.addEventListener("click", () => regenerateOne(card, index));
+
+  actions.appendChild(dlBtn);
+  actions.appendChild(regenBtn);
+  card.appendChild(wrapper);
+  card.appendChild(actions);
+
+  return card;
+}
+
+// ── REGENERAR UMA ──
+async function regenerateOne(card, index) {
+  if (!state.fotoBase64 || state.generating) return;
+  state.generating = true;
+
+  const ph = createPlaceholderCard(index);
+  card.replaceWith(ph);
 
   try {
-    const url = await callFalAI(promptText, photoBase64, refBase64, seed);
-    generatedImages[i] = url;
-    swapCardWithImage(i, url);
-    showToast('↻ Imagem #' + (i + 1) + ' regenerada');
+    const offset = index + Math.floor(Math.random() * 100);
+    const description = await callAnalyze(offset);
+    const imageUrl = await callGenerate(description, offset + Date.now());
+    await preloadImage(imageUrl);
+    state.generatedImages[index] = imageUrl;
+    ph.replaceWith(createImageCard(imageUrl, index, state.modoTeste));
   } catch (err) {
-    swapCardWithError(i, err.message);
-    showToast('❌ Erro ao regenerar');
+    ph.replaceWith(createErrorCard(index, err.message));
   }
+
+  state.generating = false;
 }
 
-function toggleFav(i) {
-  const card   = document.getElementById('card-' + i);
-  const favBtn = document.getElementById('fav-' + i);
-  if (!card) return;
-
-  const isNowFav = !card.classList.contains('is-fav');
-  card.classList.toggle('is-fav', isNowFav);
-  if (favBtn) favBtn.classList.toggle('active', isNowFav);
-
-  favCount += isNowFav ? 1 : -1;
-  favCount  = Math.max(0, favCount);
-  document.getElementById('statFav').textContent = favCount;
-
-  showToast(isNowFav ? '★ Adicionada aos favoritos' : '☆ Removida dos favoritos');
+// ── CARD ERRO ──
+function createErrorCard(index, message) {
+  const card = document.createElement("div");
+  card.className = "img-card";
+  const msg = (message || "Erro desconhecido").substring(0, 100);
+  card.innerHTML = `
+    <div class="img-card-placeholder" style="padding:16px;">
+      <span style="font-size:20px; opacity:0.6;">✕</span>
+      <span style="color:#ff5555; font-size:9px; text-align:center; line-height:1.6; font-weight:700; letter-spacing:0.5px;">${msg}</span>
+    </div>
+  `;
+  return card;
 }
 
-/* ════════════════════════
-   TOAST
-════════════════════════ */
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timeout);
-  t._timeout = setTimeout(() => t.classList.remove('show'), 3200);
+// ── DOWNLOAD INDIVIDUAL ──
+function downloadImage(url, filename) {
+  fetch(url, { mode: "cors" })
+    .then(r => r.blob())
+    .then(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(() => {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
 }
 
-/* ════════════════════════
-   INIT
-════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  setMode(1);
-});
+// ── BAIXAR TODAS ──
+async function downloadAll() {
+  const imgs = document.querySelectorAll(".img-card img");
+  if (!imgs.length) return;
+
+  const btn = document.getElementById("btnDownloadAll");
+  btn.disabled = true;
+  btn.textContent = "⏳ Baixando...";
+
+  let count = 0;
+  for (const img of imgs) {
+    if (img.src && img.complete && !img.src.startsWith("data:")) {
+      count++;
+      downloadImage(img.src, `zytrix-${count}.jpg`);
+      await new Promise(r => setTimeout(r, 800));
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = "⬇ Baixar Todas";
+}
