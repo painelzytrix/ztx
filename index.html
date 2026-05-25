@@ -2,128 +2,102 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ZYTRIX AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZYTRIX AI — Imagens Profissionais</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
   <header class="header">
     <div class="logo">
-      <div class="logo-icon">ZX</div>
-      <div>
-        <div class="logo-text">ZYTRIX AI</div>
-        <div class="logo-sub">Professional Image Studio</div>
-      </div>
+      <span class="logo-z">Z</span>YTRIX
+      <span class="logo-ai">AI</span>
     </div>
-    <div class="toggle-wrap">
-      <span class="toggle-label">Modo Teste</span>
-      <label class="toggle">
-        <input type="checkbox" id="modoTeste" />
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
+    <p class="tagline">Transforme sua foto em imagem profissional com IA</p>
   </header>
 
-  <main class="main">
+  <main class="container">
 
-    <!-- BLOCO 1: FOTO PRINCIPAL -->
-    <div class="card" id="card-foto">
-      <div class="section-label">Bloco 1 — Obrigatório</div>
-      <div class="section-title">Foto Principal</div>
-      <div class="upload-area" id="uploadArea1">
-        <input type="file" id="fotoInput" accept="image/*" />
-        <span class="upload-icon">📷</span>
-        <div class="upload-title">Envie sua foto</div>
-        <div class="upload-sub">Rosto, meio corpo ou corpo inteiro • Máx. 5MB</div>
-        <img class="upload-preview" id="fotoPreview" alt="Preview foto principal" />
-        <div class="upload-name" id="fotoName"></div>
-      </div>
-    </div>
+    <!-- PAINEL DE CONTROLE -->
+    <section class="panel">
 
-    <!-- BLOCO 2: REFERÊNCIA OPCIONAL -->
-    <div class="card" id="card-ref">
-      <div class="section-label">Bloco 2 — Opcional</div>
-      <div class="section-title">Referência Visual</div>
-
-      <div class="tabs">
-        <button class="tab active" data-tab="foto-ref">📸 Foto</button>
-        <button class="tab" data-tab="johnson">🔠 Johnson</button>
-        <button class="tab" data-tab="texto">✏️ Texto</button>
-      </div>
-
-      <div class="tab-panel active" id="tab-foto-ref">
-        <div class="upload-area" id="uploadArea2">
-          <input type="file" id="refInput" accept="image/*" />
-          <span class="upload-icon">🖼️</span>
-          <div class="upload-title">Foto de referência</div>
-          <div class="upload-sub">Pose, cenário e estética serão preservados</div>
-          <img class="upload-preview" id="refPreview" alt="Preview referência" />
-          <div class="upload-name" id="refName"></div>
+      <div class="panel-section">
+        <label class="label">
+          <span class="label-icon">📸</span>
+          Sua Foto <span class="required">*</span>
+        </label>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="photoInput" accept="image/*" hidden />
+          <div class="upload-content" id="uploadContent">
+            <div class="upload-icon">⬆</div>
+            <p>Clique ou arraste sua foto aqui</p>
+            <span>JPG, PNG, WEBP — máx 10MB</span>
+          </div>
+          <img id="photoPreview" class="photo-preview hidden" alt="Preview" />
         </div>
       </div>
 
-      <div class="tab-panel" id="tab-johnson">
-        <textarea id="johnsonInput" placeholder="Cole aqui o código Johnson completo...&#10;&#10;A IA interpretará como referência visual total, mantendo a estrutura e substituindo apenas a identidade."></textarea>
-        <div class="textarea-footer">
-          <button class="clear-btn" id="clearJohnson">✕ Limpar</button>
-        </div>
+      <div class="panel-section">
+        <label class="label" for="styleSelect">
+          <span class="label-icon">✦</span>
+          Estilo da Imagem
+        </label>
+        <select id="styleSelect" class="select">
+          <option value="Foto profissional corporativa, terno, ambiente executivo">💼 Corporativo Executivo</option>
+          <option value="Foto profissional para LinkedIn, sorriso confiante, fundo neutro">🔗 LinkedIn Premium</option>
+          <option value="Retrato artístico fashion, iluminação dramática, editorial de moda">👗 Fashion Editorial</option>
+          <option value="Foto de perfil para redes sociais, look casual luxuoso, ambiente moderno">✨ Social Premium</option>
+          <option value="Retrato cinematográfico, iluminação de filme, profundidade de campo">🎬 Cinematográfico</option>
+          <option value="Foto empresarial CEO, confiança e autoridade, ambiente de escritório premium">👑 CEO / Liderança</option>
+          <option value="Retrato criativo artístico, cores vibrantes, composição única">🎨 Artístico Criativo</option>
+          <option value="Foto para pitch de startup, jovem profissional, inovação e tecnologia">🚀 Tech Startup</option>
+        </select>
       </div>
 
-      <div class="tab-panel" id="tab-texto">
-        <textarea id="textoInput" placeholder='Descreva o resultado desejado...&#10;&#10;Ex: "advogado sentado em poltrona escura, terno premium, luz cinematográfica"&#10;&#10;Ou apenas: "médico", "empresária", "executivo" — a IA infere tudo.'></textarea>
-        <div class="textarea-footer">
-          <button class="clear-btn" id="clearTexto">✕ Limpar</button>
-        </div>
-        <div class="shortcuts" id="shortcuts"></div>
+      <div class="panel-section">
+        <label class="label" for="referenceText">
+          <span class="label-icon">✍</span>
+          Referência Adicional <span class="optional">(opcional)</span>
+        </label>
+        <textarea
+          id="referenceText"
+          class="textarea"
+          placeholder="Ex: quero fundo azul, terno preto, expressão séria, iluminação suave..."
+          rows="3"
+        ></textarea>
       </div>
-    </div>
 
-    <!-- QUANTIDADE -->
-    <div class="card">
-      <div class="section-label">Quantidade</div>
-      <div class="section-title">Quantas imagens gerar?</div>
-      <div class="qty-row">
-        <button class="qty-btn active" data-qty="3">
-          <span class="qty-num">3</span>
-          <span class="qty-sub">imagens</span>
-        </button>
-        <button class="qty-btn" data-qty="6">
-          <span class="qty-num">6</span>
-          <span class="qty-sub">imagens</span>
-        </button>
-        <button class="qty-btn" data-qty="9">
-          <span class="qty-num">9</span>
-          <span class="qty-sub">imagens</span>
-        </button>
+      <button class="btn-generate" id="btnGenerate">
+        <span class="btn-icon">⚡</span>
+        <span id="btnText">GERAR IMAGENS COM IA</span>
+      </button>
+
+      <div class="error-box hidden" id="errorBox">
+        <span class="error-icon">⚠</span>
+        <span id="errorMsg"></span>
       </div>
-    </div>
 
-    <!-- BTN GERAR -->
-    <button class="btn-gerar" id="btnGerar">
-      <span id="btnLabel">⚡ GERAR IMAGENS</span>
-      <div class="btn-progress" id="btnProgress"></div>
-    </button>
-
-    <!-- STATUS -->
-    <div class="status-bar" id="statusBar" style="display:none;">
-      <div class="status-fill" id="statusFill"></div>
-      <span class="status-text" id="statusText">Processando...</span>
-    </div>
-
-    <!-- ERRO -->
-    <div class="error-box" id="errorBox"></div>
+    </section>
 
     <!-- RESULTADO -->
-    <div class="result-section" id="resultSection" style="display:none;">
-      <div class="result-header">
-        <div class="result-title" id="resultTitle">Imagens Geradas</div>
-        <button class="btn-download-all" id="btnDownloadAll">⬇ Baixar Todas</button>
+    <section class="results hidden" id="resultsSection">
+      <div class="results-header">
+        <h2 class="results-title">Suas Imagens Geradas</h2>
+        <button class="btn-download-all" id="btnDownloadAll">
+          ⬇ Baixar Todas
+        </button>
       </div>
-      <div class="image-grid" id="imageGrid"></div>
-    </div>
+      <div class="images-grid" id="imagesGrid"></div>
+    </section>
 
   </main>
+
+  <footer class="footer">
+    <p>ZYTRIX AI &copy; 2025 — Powered by Claude + Flux</p>
+  </footer>
 
   <script src="app.js"></script>
 </body>
